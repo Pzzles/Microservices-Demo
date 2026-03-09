@@ -1,0 +1,16 @@
+# Secrets and local developer config
+**/appsettings.Development.json
+**/appsettings.Local.json
+**/appsettings.*.local.json
+**/.env
+**/.env.*
+
+# Local logs
+*.log
+*.err.log
+*.stdout.log
+*.stderr.log
+
+# .NET build artifacts
+**/bin/
+**/obj/
