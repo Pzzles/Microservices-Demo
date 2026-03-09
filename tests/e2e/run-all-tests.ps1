@@ -82,6 +82,41 @@ function Wait-Healthy {
     throw "$Name did not become healthy at $Url"
 }
 
+function Get-DotEnvMap {
+    param(
+        [Parameter(Mandatory = $true)] [string]$Path
+    )
+
+    if (-not (Test-Path $Path)) {
+        throw ".env file not found: $Path"
+    }
+
+    $map = @{}
+    foreach ($line in Get-Content $Path) {
+        $trimmed = $line.Trim()
+        if ([string]::IsNullOrWhiteSpace($trimmed) -or $trimmed.StartsWith("#")) {
+            continue
+        }
+
+        if ($trimmed.StartsWith("export ")) {
+            $trimmed = $trimmed.Substring(7).Trim()
+        }
+
+        $parts = $trimmed -split "=", 2
+        if ($parts.Length -ne 2) {
+            continue
+        }
+
+        $key = $parts[0].Trim()
+        $value = $parts[1].Trim().Trim('"')
+        if (-not [string]::IsNullOrWhiteSpace($key)) {
+            $map[$key] = $value
+        }
+    }
+
+    return $map
+}
+
 $repo = "c:\Users\user\Desktop\Projects\Large\Assessements_and_Experiments\Experiments\E-Commerce-Microservice-Demo"
 Set-Location $repo
 
@@ -95,15 +130,15 @@ $userDb = "Host=localhost;Port=5432;Database=user_service_db;Username=postgres;P
 $productDb = "Host=localhost;Port=5432;Database=product_service_db;Username=postgres;Password=yourpassword"
 $orderDb = "Host=localhost;Port=5432;Database=order_service_db;Username=postgres;Password=yourpassword"
 
-# Cognito settings are sourced from UserService dev config
-$userConfig = Get-Content -Raw "src/UserService/appsettings.Development.json" | ConvertFrom-Json
-$clientId = $userConfig.Cognito__ClientId
-$clientSecret = $userConfig.Cognito__ClientSecret
-$userPoolId = $userConfig.Cognito__UserPoolId
-$region = $userConfig.Cognito__Region
+# Cognito settings are sourced from UserService .env
+$userEnv = Get-DotEnvMap -Path "src/UserService/.env"
+$clientId = $userEnv["Cognito__ClientId"]
+$clientSecret = $userEnv["Cognito__ClientSecret"]
+$userPoolId = $userEnv["Cognito__UserPoolId"]
+$region = $userEnv["Cognito__Region"]
 
 if ([string]::IsNullOrWhiteSpace($clientId) -or [string]::IsNullOrWhiteSpace($clientSecret) -or [string]::IsNullOrWhiteSpace($userPoolId) -or [string]::IsNullOrWhiteSpace($region)) {
-    throw "Missing Cognito values in src/UserService/appsettings.Development.json"
+    throw "Missing Cognito values in src/UserService/.env"
 }
 
 $env:ASPNETCORE_ENVIRONMENT = "Development"
