@@ -1,0 +1,11 @@
+@OrderService_HostAddress = http://localhost:5136
+
+GET {{OrderService_HostAddress}}/api/orders/health
+Accept: application/json
+
+###
+GET {{OrderService_HostAddress}}/api/orders/user/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{$auth_token}}
+Accept: application/json
+
+###

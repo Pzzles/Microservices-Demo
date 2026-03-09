@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Token Helper</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #0b6bcb;
+      --border: #d1d5db;
+      --danger: #b42318;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(160deg, #f7fafc 0%, #eef4ff 100%);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 780px;
+      margin: 40px auto;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.5rem;
+    }
+
+    .hint {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    input, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.95rem;
+    }
+
+    textarea {
+      min-height: 140px;
+      resize: vertical;
+      font-family: Consolas, "Courier New", monospace;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 1px solid var(--primary);
+      background: var(--primary);
+      color: #fff;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #fff;
+      color: var(--primary);
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+
+    .status.error {
+      color: var(--danger);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>UserService Token Helper</h1>
+      <p class="hint">Use this page to get a Cognito access token and paste it into Postman.</p>
+
+      <div class="field">
+        <label for="baseUrl">UserService Base URL</label>
+        <input id="baseUrl" type="text" value="http://localhost:5204">
+      </div>
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="you@example.com">
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" type="password" placeholder="Your password">
+      </div>
+
+      <div class="actions">
+        <button id="getTokenBtn" type="button">Get Access Token</button>
+        <button id="copyBtn" class="secondary" type="button">Copy Token</button>
+      </div>
+
+      <div class="field" style="margin-top:14px;">
+        <label for="token">Access Token</label>
+        <textarea id="token" readonly></textarea>
+      </div>
+
+      <div id="status" class="status"></div>
+    </div>
+  </div>
+
+  <script>
+    const getTokenBtn = document.getElementById("getTokenBtn");
+    const copyBtn = document.getElementById("copyBtn");
+    const baseUrlEl = document.getElementById("baseUrl");
+    const emailEl = document.getElementById("email");
+    const passwordEl = document.getElementById("password");
+    const tokenEl = document.getElementById("token");
+    const statusEl = document.getElementById("status");
+
+    function setStatus(message, isError) {
+      statusEl.textContent = message;
+      statusEl.classList.toggle("error", Boolean(isError));
+    }
+
+    getTokenBtn.addEventListener("click", async () => {
+      const baseUrl = baseUrlEl.value.trim().replace(/\/+$/, "");
+      const email = emailEl.value.trim();
+      const password = passwordEl.value;
+
+      if (!baseUrl || !email || !password) {
+        setStatus("Base URL, email, and password are required.", true);
+        return;
+      }
+
+      tokenEl.value = "";
+      setStatus("Requesting token...", false);
+
+      try {
+        const response = await fetch(`${baseUrl}/api/users/token`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const message = data?.message || `Request failed with status ${response.status}.`;
+          setStatus(message, true);
+          return;
+        }
+
+        tokenEl.value = data.accessToken || "";
+        if (!tokenEl.value) {
+          setStatus("No access token returned.", true);
+          return;
+        }
+
+        setStatus("Token received. Copy and paste into Postman Bearer token.", false);
+      } catch (error) {
+        setStatus(`Network error: ${error.message}`, true);
+      }
+    });
+
+    copyBtn.addEventListener("click", async () => {
+      if (!tokenEl.value) {
+        setStatus("No token to copy yet.", true);
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(tokenEl.value);
+        setStatus("Token copied to clipboard.", false);
+      } catch {
+        tokenEl.select();
+        document.execCommand("copy");
+        setStatus("Token copied.", false);
+      }
+    });
+  </script>
+</body>
+</html>

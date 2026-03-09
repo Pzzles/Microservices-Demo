@@ -1,0 +1,14 @@
+@ProductService_HostAddress = http://localhost:5134
+
+GET {{ProductService_HostAddress}}/api/products/health
+Accept: application/json
+
+###
+GET {{ProductService_HostAddress}}/api/products
+Accept: application/json
+
+###
+GET {{ProductService_HostAddress}}/api/products?category=Phones
+Accept: application/json
+
+###
