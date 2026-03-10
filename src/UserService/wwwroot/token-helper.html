@@ -126,6 +126,11 @@
         <input id="password" type="password" placeholder="Your password">
       </div>
 
+      <div class="field">
+        <label for="code">Confirmation Code</label>
+        <input id="code" type="text" placeholder="Enter Cognito verification code">
+      </div>
+
       <div class="actions">
         <button id="getTokenBtn" type="button">Get Access Token</button>
         <button id="copyBtn" class="secondary" type="button">Copy Token</button>
@@ -146,6 +151,7 @@
     const baseUrlEl = document.getElementById("baseUrl");
     const emailEl = document.getElementById("email");
     const passwordEl = document.getElementById("password");
+    const codeEl = document.getElementById("code");
     const tokenEl = document.getElementById("token");
     const statusEl = document.getElementById("status");
 
@@ -158,6 +164,7 @@
       const baseUrl = baseUrlEl.value.trim().replace(/\/+$/, "");
       const email = emailEl.value.trim();
       const password = passwordEl.value;
+      const code = codeEl.value.trim();
 
       if (!baseUrl || !email || !password) {
         setStatus("Base URL, email, and password are required.", true);
@@ -171,12 +178,16 @@
         const response = await fetch(`${baseUrl}/api/users/token`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ email, password, code: code || null })
         });
 
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
           const message = data?.message || `Request failed with status ${response.status}.`;
+          if (message.toLowerCase().includes("not confirmed")) {
+            setStatus("User is not confirmed. Enter confirmation code and click Get Access Token again.", true);
+            return;
+          }
           setStatus(message, true);
           return;
         }

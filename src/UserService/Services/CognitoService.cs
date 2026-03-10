@@ -1,6 +1,7 @@
 using Amazon;
 using Amazon.CognitoIdentityProvider;
 using Amazon.CognitoIdentityProvider.Model;
+using Amazon.Runtime;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -15,10 +16,10 @@ namespace UserService.Services
 
         public CognitoService(IConfiguration configuration)
         {
-            _userPoolId = configuration["Cognito__UserPoolId"] ?? string.Empty;
-            _clientId = configuration["Cognito__ClientId"] ?? string.Empty;
-            _clientSecret = configuration["Cognito__ClientSecret"] ?? string.Empty;
-            var regionName = configuration["Cognito__Region"] ?? string.Empty;
+            _userPoolId = GetConfig(configuration, "Cognito__UserPoolId");
+            _clientId = GetConfig(configuration, "Cognito__ClientId");
+            _clientSecret = GetConfig(configuration, "Cognito__ClientSecret");
+            var regionName = GetConfig(configuration, "Cognito__Region");
 
             if (
                 string.IsNullOrWhiteSpace(_userPoolId)
@@ -31,6 +32,11 @@ namespace UserService.Services
             }
 
             _region = RegionEndpoint.GetBySystemName(regionName);
+        }
+
+        private static string GetConfig(IConfiguration configuration, string key)
+        {
+            return configuration[key.Replace("__", ":")] ?? configuration[key] ?? string.Empty;
         }
 
         public async Task<string> RegisterAsync(string email, string password, string name)
@@ -119,6 +125,62 @@ namespace UserService.Services
             catch (InvalidParameterException ex)
             {
                 throw new ArgumentException($"Authentication failed: {ex.Message}");
+            }
+            catch (AmazonServiceException ex)
+            {
+                throw new ArgumentException($"Authentication failed: {ex.Message}");
+            }
+        }
+
+        public async Task<string> ConfirmAsync(string email, string code)
+        {
+            var normalizedEmail = email.Trim().ToLowerInvariant();
+            var normalizedCode = code.Trim();
+
+            try
+            {
+                using var client = new AmazonCognitoIdentityProviderClient(_region);
+                await client.ConfirmSignUpAsync(new ConfirmSignUpRequest
+                {
+                    ClientId = _clientId,
+                    Username = normalizedEmail,
+                    ConfirmationCode = normalizedCode,
+                    SecretHash = ComputeSecretHash(normalizedEmail)
+                });
+
+                return "User confirmed successfully.";
+            }
+            catch (NotAuthorizedException ex) when (ex.Message.Contains("Current status is CONFIRMED", StringComparison.OrdinalIgnoreCase))
+            {
+                return "User already confirmed.";
+            }
+            catch (NotAuthorizedException ex)
+            {
+                throw new ArgumentException($"Confirmation failed: {ex.Message}");
+            }
+            catch (CodeMismatchException)
+            {
+                throw new ArgumentException("Confirmation failed: invalid confirmation code.");
+            }
+            catch (ExpiredCodeException)
+            {
+                throw new ArgumentException("Confirmation failed: confirmation code has expired.");
+            }
+            catch (UserNotFoundException)
+            {
+                throw new ArgumentException("Confirmation failed: user not found.");
+            }
+            catch (InvalidParameterException ex)
+            {
+                throw new ArgumentException($"Confirmation failed: {ex.Message}");
+            }
+            catch (AmazonCognitoIdentityProviderException ex)
+            {
+                throw new ArgumentException($"Confirmation failed: {ex.Message}");
+            }
+            catch (AmazonServiceException ex)
+            {
+                throw new ArgumentException($"Confirmation failed: {ex.Message}");
             }
         }
 

@@ -8,10 +8,11 @@ using OrderService.Services;
 LoadEnvironmentFromDotEnv(".env", Path.Combine("src", "OrderService", ".env"));
 
 var builder = WebApplication.CreateBuilder(args);
+string? GetConfig(string key) => builder.Configuration[key.Replace("__", ":")] ?? builder.Configuration[key];
 
 builder.Services.AddControllers();
 
-var connectionString = builder.Configuration["ConnectionStrings__OrderDb"];
+var connectionString = GetConfig("ConnectionStrings__OrderDb");
 if (string.IsNullOrWhiteSpace(connectionString))
 {
     throw new InvalidOperationException("Missing configuration value: ConnectionStrings__OrderDb");
@@ -23,7 +24,7 @@ builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderService, OrderService.Services.OrderService>();
 builder.Services.AddScoped<IProductValidationService, ProductValidationService>();
 
-var productServiceUrl = builder.Configuration["ServiceUrls__ProductService"];
+var productServiceUrl = GetConfig("ServiceUrls__ProductService");
 if (string.IsNullOrWhiteSpace(productServiceUrl))
 {
     throw new InvalidOperationException("Missing configuration value: ServiceUrls__ProductService");
@@ -34,8 +35,8 @@ builder.Services.AddHttpClient("ProductService", client =>
     client.BaseAddress = new Uri(productServiceUrl);
 });
 
-var cognitoRegion = builder.Configuration["Cognito__Region"];
-var cognitoUserPoolId = builder.Configuration["Cognito__UserPoolId"];
+var cognitoRegion = GetConfig("Cognito__Region");
+var cognitoUserPoolId = GetConfig("Cognito__UserPoolId");
 if (string.IsNullOrWhiteSpace(cognitoRegion) || string.IsNullOrWhiteSpace(cognitoUserPoolId))
 {
     throw new InvalidOperationException("Missing Cognito configuration. Set Cognito__Region and Cognito__UserPoolId.");

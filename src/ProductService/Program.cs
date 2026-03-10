@@ -8,10 +8,11 @@ using ProductService.Services;
 LoadEnvironmentFromDotEnv(".env", Path.Combine("src", "ProductService", ".env"));
 
 var builder = WebApplication.CreateBuilder(args);
+string? GetConfig(string key) => builder.Configuration[key.Replace("__", ":")] ?? builder.Configuration[key];
 
 builder.Services.AddControllers();
 
-var connectionString = builder.Configuration["ConnectionStrings__ProductDb"];
+var connectionString = GetConfig("ConnectionStrings__ProductDb");
 if (string.IsNullOrWhiteSpace(connectionString))
 {
     throw new InvalidOperationException("Missing configuration value: ConnectionStrings__ProductDb");
@@ -22,8 +23,8 @@ builder.Services.AddDbContext<ProductDbContext>(options => options.UseNpgsql(con
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService.Services.ProductService>();
 
-var cognitoRegion = builder.Configuration["Cognito__Region"];
-var cognitoUserPoolId = builder.Configuration["Cognito__UserPoolId"];
+var cognitoRegion = GetConfig("Cognito__Region");
+var cognitoUserPoolId = GetConfig("Cognito__UserPoolId");
 if (string.IsNullOrWhiteSpace(cognitoRegion) || string.IsNullOrWhiteSpace(cognitoUserPoolId))
 {
     throw new InvalidOperationException("Missing Cognito configuration. Set Cognito__Region and Cognito__UserPoolId.");

@@ -1,0 +1,10 @@
+# Ignore everything by default for this Dockerfile build context.
+**
+
+# Include only what OrderService image build needs.
+!E-Commerce-Microservices-Demo.sln
+!src/OrderService/**
+
+# Do not bake local secrets into images.
+src/OrderService/.env
+src/OrderService/appsettings.Development.json

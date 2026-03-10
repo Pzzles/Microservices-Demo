@@ -1,0 +1,10 @@
+# Ignore everything by default for this Dockerfile build context.
+**
+
+# Include only what UserService image build needs.
+!E-Commerce-Microservices-Demo.sln
+!src/UserService/**
+
+# Do not bake local secrets into images.
+src/UserService/.env
+src/UserService/appsettings.Development.json

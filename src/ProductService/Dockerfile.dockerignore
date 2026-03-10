@@ -1,0 +1,10 @@
+# Ignore everything by default for this Dockerfile build context.
+**
+
+# Include only what ProductService image build needs.
+!E-Commerce-Microservices-Demo.sln
+!src/ProductService/**
+
+# Do not bake local secrets into images.
+src/ProductService/.env
+src/ProductService/appsettings.Development.json

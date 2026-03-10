@@ -53,7 +53,37 @@ namespace UserService.Services
                 throw new ArgumentException("Email and password are required.");
             }
 
-            return await _cognitoService.AuthenticateAsync(dto.Email, dto.Password);
+            if (!string.IsNullOrWhiteSpace(dto.Code))
+            {
+                await _cognitoService.ConfirmAsync(dto.Email, dto.Code);
+            }
+
+            try
+            {
+                return await _cognitoService.AuthenticateAsync(dto.Email, dto.Password);
+            }
+            catch (ArgumentException ex) when (
+                !string.IsNullOrWhiteSpace(dto.Code) &&
+                ex.Message.Contains("not confirmed", StringComparison.OrdinalIgnoreCase))
+            {
+                await _cognitoService.ConfirmAsync(dto.Email, dto.Code!);
+                return await _cognitoService.AuthenticateAsync(dto.Email, dto.Password);
+            }
+        }
+
+        public async Task<string> ConfirmUserAsync(ConfirmRequestDto dto)
+        {
+            if (dto is null)
+            {
+                throw new ArgumentException("Request body is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Code))
+            {
+                throw new ArgumentException("Email and confirmation code are required.");
+            }
+
+            return await _cognitoService.ConfirmAsync(dto.Email, dto.Code);
         }
     }
 }

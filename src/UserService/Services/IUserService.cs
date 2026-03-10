@@ -7,5 +7,6 @@ namespace UserService.Services
         Task<UserResponseDto> RegisterAsync(RegisterRequestDto dto);
         Task<UserResponseDto?> GetByIdAsync(Guid id);
         Task<string> GetAccessTokenAsync(LoginRequestDto dto);
+        Task<string> ConfirmUserAsync(ConfirmRequestDto dto);
     }
 }

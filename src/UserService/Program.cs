@@ -8,10 +8,11 @@ using UserService.Services;
 LoadEnvironmentFromDotEnv(".env", Path.Combine("src", "UserService", ".env"));
 
 var builder = WebApplication.CreateBuilder(args);
+string? GetConfig(string key) => builder.Configuration[key.Replace("__", ":")] ?? builder.Configuration[key];
 
 builder.Services.AddControllers();
 
-var userDbConnection = builder.Configuration["ConnectionStrings__UserDb"];
+var userDbConnection = GetConfig("ConnectionStrings__UserDb");
 if (string.IsNullOrWhiteSpace(userDbConnection))
 {
     throw new InvalidOperationException("Missing configuration value: ConnectionStrings__UserDb");
@@ -23,9 +24,9 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService.Services.UserService>();
 builder.Services.AddScoped<ICognitoService, CognitoService>();
 
-var cognitoUserPoolId = builder.Configuration["Cognito__UserPoolId"];
-var cognitoClientId = builder.Configuration["Cognito__ClientId"];
-var cognitoRegion = builder.Configuration["Cognito__Region"];
+var cognitoUserPoolId = GetConfig("Cognito__UserPoolId");
+var cognitoClientId = GetConfig("Cognito__ClientId");
+var cognitoRegion = GetConfig("Cognito__Region");
 
 if (string.IsNullOrWhiteSpace(cognitoUserPoolId) || string.IsNullOrWhiteSpace(cognitoClientId) || string.IsNullOrWhiteSpace(cognitoRegion))
 {
